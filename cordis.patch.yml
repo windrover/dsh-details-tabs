@@ -1,0 +1,7 @@
+# The dsh-details-tabs bundle patch: one host row (empty apply) so the package
+# appears in the loader; the browser half ships via exports["./client"] and
+# owns the details slot. Applied after dsh-web-app; the user's own
+# cordis.patch.yml can still override the row by id.
+- insert:
+    - id: details-tabs
+      name: dsh-details-tabs
