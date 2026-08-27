@@ -34,15 +34,17 @@ dsh plugin --profile web add "file:$(pwd)"
 
 ## 第三方兼容（其他开发者插件，零改动接入）
 
-DSH 原生让插件出现在右侧栏的方式是**直接注册进 `details` 单槽**（官方「工具调用详情」面板就是这么做的）。单槽只渲染最低 priority 的那个 entry，所以本容器（-10）会赢下该槽——**任何按原生方式注册的第三方插件，都会被自动镜像成容器面板**（面板条 chip + 布局叶子 + 可拖拽），第三方代码**一行都不用改**：
+DSH 原生让插件出现在右侧栏的方式是**直接注册进 `details` 单槽**（官方「工具调用详情」面板就是这么做的）。单槽只渲染最低 priority 的那个 entry，所以本容器（-10）会赢下该槽——**任何按原生方式注册的第三方插件，都会被自动镜像成容器面板**，第三方代码**一行都不用改**：
 
-- 官方 `DetailsPanel`（工具调用详情）会作为「详情」面板出现在容器里；
+- 官方 `DetailsPanel`（工具调用详情）会作为「详情」面板出现在**面板条**里；
 - 社区里按 `details` 槽写的面板（如 README 曾推荐的 priority -1/-2 写法）同样被吸收；
 - 若第三方面板后来也升级成自适应挂载（注册进 `details.tabs.item`），镜像自动让位，不会重复。
 
-实现：`mountThirdPartyMirror` 订阅 `details` 槽，把每个外部 entry（同 component + inject）注册进 `details.tabs.item`，key 用 `ext:<priority>`（单槽同 priority 会互斥，天然唯一且跨重启稳定）；不复制 children 声明（原 entry 仍持有）；启动顺序兜底由 2s 轮询重试。行为测试见 `test/mirror.test.mjs`（覆盖同步/延迟注入两种启动顺序）。
+**外部面板默认不自动加入布局**：镜像面板（key 统一带 `ext:` 前缀）只以**暗色 chip** 出现在顶部面板条，点击才打开——避免"官方详情面板突然多出一个窗口"式的布局突变；首次打开的第三方面板同理。关闭后同样从面板条/DockRail 重新打开。
 
-已知限制：未适配 `embedded` 的第三方面板会同时显示自己的标题栏与容器叶子标题栏（双重标题）；这是第三方代码决定的，可提示对方接 `embedded`。
+实现：`mountThirdPartyMirror` 订阅 `details` 槽，把每个外部 entry（同 component + inject）注册进 `details.tabs.item`，key 统一 `ext:<key|priority>`（单槽同 priority 会互斥，天然唯一且跨重启稳定）；不复制 children 声明（原 entry 仍持有）；启动顺序兜底由 2s 轮询重试。行为测试见 `test/mirror.test.mjs`（覆盖同步/延迟注入两种启动顺序）。
+
+已知限制：未适配 `embedded` 的第三方面板打开后会同时显示自己的标题栏与容器叶子标题栏（双重标题）；这是第三方代码决定的，可提示对方接 `embedded`。
 
 ## 注册新面板（给插件开发者）
 

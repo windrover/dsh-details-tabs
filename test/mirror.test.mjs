@@ -154,6 +154,12 @@ function runScenario({ syncInject }) {
   slots.register({ name: "details", priority: -5, label: "Late" }, LatePanel);
   assert.ok(slots.entries("details.tabs.item").some((e) => e.options.key === "ext:-5" && e.component === LatePanel), "late registration mirrored on change");
 
+  // A source entry that carries its own key still mirrors under the uniform
+  // "ext:" prefix (so every mirrored panel is recognizable for strip-only).
+  const KeyedExt = function KeyedExt() {};
+  slots.register({ name: "details", priority: -7, key: "my-keyed" }, KeyedExt);
+  assert.ok(slots.entries("details.tabs.item").some((e) => e.options.key === "ext:my-keyed" && e.component === KeyedExt), "keyed source mirrors under ext: prefix");
+
   // Unregistration removes the mirror.
   const before = slots.entries("details.tabs.item").length;
   const lateEntry = slots.entries("details").find((e) => e.component === LatePanel);
