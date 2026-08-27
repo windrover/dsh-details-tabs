@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict'
 import {
   leaf, split, panelsOf, hasPanel, dropOn, closePanel, setRatio, setRatioAt,
-  addPanels, serialize, deserialize, splitCount,
+  addPanels, prunePanels, serialize, deserialize, splitCount,
 } from '../lib/layout.js'
 
 // ── basics ──────────────────────────────────────────────────────────────────
@@ -125,6 +125,18 @@ assert.equal(splitCount(leaf('a')), 0)
   assert.deepEqual(replaced, leaf('a'))
   // ratio clamp in split() applies on bad ratios
   assert.equal(split('row', leaf('a'), leaf('b'), 3).ratio, 1)
+}
+
+// ── prunePanels (deregistered panels) ───────────────────────────────────────
+{
+  const base = split('row', leaf('a'), split('col', leaf('b'), leaf('c')))
+  const r = prunePanels(base, ['a', 'b'])
+  assert.deepEqual(r, split('row', leaf('a'), leaf('b')), 'c pruned, tree collapses')
+  assert.equal(prunePanels(base, ['a', 'b', 'c']), base, 'nothing missing → same ref')
+  assert.equal(prunePanels(leaf('a'), ['b']), null, 'last leaf pruned → null')
+  assert.equal(prunePanels(null, ['a']), null)
+  const single = leaf('a')
+  assert.equal(prunePanels(single, ['a']), single, 'kept leaf → same ref')
 }
 
 console.log('dsh-details-tabs: layout assertions passed')

@@ -139,14 +139,12 @@ function runScenario({ syncInject }) {
 
   const tabs = slots.entries("details.tabs.item");
   const keys = tabs.map((e) => e.options.key).sort();
-  assert.deepEqual(keys, ["ext:-2", "ext:0"], "both foreign entries mirrored");
+  assert.deepEqual(keys, ["ext:-2"], "third-party mirrored; shell DetailsPanel skipped");
   const mThird = tabs.find((e) => e.options.key === "ext:-2");
-  const mShell = tabs.find((e) => e.options.key === "ext:0");
   assert.equal(mThird.component, ThirdParty, "mirror keeps third-party component");
-  assert.equal(mShell.component, ShellPanel, "mirror keeps shell component");
   assert.equal(mThird.options.label, "My Panel", "mirror keeps label");
   assert.ok(typeof mThird.options.inject === "function", "mirror keeps inject factory");
-  assert.equal(mShell.options.label, "详情", "zh fallback label for unnamed entries (navigator zh)");
+  assert.equal(tabs.some((e) => e.component === ShellPanel), false, "shell DetailsPanel is never mirrored");
   assert.equal(tabs.some((e) => e.component === exp.TabsContainer), false, "container is never mirrored");
 
   // Late third-party registration AFTER the container: subscribe fires sync.
