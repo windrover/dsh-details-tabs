@@ -14,6 +14,7 @@
 | **面板条 (strip)** | 顶部列出所有已注册面板：亮=已打开，暗=已关闭（点击重新打开）；右侧 `»` 收起侧栏 |
 | **Blender 风格 DockRail** | 侧栏收起时，右侧边缘竖向显示所有面板的短标签（点击展开对应面板）；无面板时显示 `≡` 兜底展开按钮 |
 | **布局持久化** | 整棵树存 localStorage（`dsh-details-tabs:layout`）；关闭全部面板也会记住，重启不会复活 |
+| **第三方兼容（零改动接入）** | 任何按原生方式注册进 `details` 槽的插件（含官方「工具调用详情」面板）都会被自动镜像为容器面板，无需改第三方代码 |
 | **自适应挂载** | 面板「容器在 → 注册为面板；容器不在 → 直接占 details 槽」，互不依赖 |
 | **会话上下文** | 每个面板用 `SessionProvider` 包裹，面板可拿到 `useSessions`/`useWorkspaces` 等会话 hooks |
 | **零冲突** | 面板用 `key` + `label` 注册，无需 priority 竞争 |
@@ -29,7 +30,19 @@ dsh plugin --profile web add "file:$(pwd)"
 
 然后**重启 `dsh web`**。bundle patch 插入 `id: details-tabs` 行。
 
-> ⚠️ 若 `cordis.patch.yml` 或 profile 里已有 `details` 相关插件配置，注意本插件占 `details` 槽（priority -1）。同一 profile 只应有一个 details 容器。
+> ⚠️ 若 `cordis.patch.yml` 或 profile 里已有 `details` 相关插件配置，注意本插件占 `details` 槽（priority **-10**）。同一 profile 只应有一个 details 容器。
+
+## 第三方兼容（其他开发者插件，零改动接入）
+
+DSH 原生让插件出现在右侧栏的方式是**直接注册进 `details` 单槽**（官方「工具调用详情」面板就是这么做的）。单槽只渲染最低 priority 的那个 entry，所以本容器（-10）会赢下该槽——**任何按原生方式注册的第三方插件，都会被自动镜像成容器面板**（面板条 chip + 布局叶子 + 可拖拽），第三方代码**一行都不用改**：
+
+- 官方 `DetailsPanel`（工具调用详情）会作为「详情」面板出现在容器里；
+- 社区里按 `details` 槽写的面板（如 README 曾推荐的 priority -1/-2 写法）同样被吸收；
+- 若第三方面板后来也升级成自适应挂载（注册进 `details.tabs.item`），镜像自动让位，不会重复。
+
+实现：`mountThirdPartyMirror` 订阅 `details` 槽，把每个外部 entry（同 component + inject）注册进 `details.tabs.item`，key 用 `ext:<priority>`（单槽同 priority 会互斥，天然唯一且跨重启稳定）；不复制 children 声明（原 entry 仍持有）；启动顺序兜底由 2s 轮询重试。行为测试见 `test/mirror.test.mjs`（覆盖同步/延迟注入两种启动顺序）。
+
+已知限制：未适配 `embedded` 的第三方面板会同时显示自己的标题栏与容器叶子标题栏（双重标题）；这是第三方代码决定的，可提示对方接 `embedded`。
 
 ## 注册新面板（给插件开发者）
 
@@ -95,9 +108,10 @@ function mountPanel(ctx, panel) {
 
 ## 文件
 
-- `lib/client.js` — 浏览器 bundle：`TabsContainer`（并列布局渲染 + 拖放 + 分隔条）、`DockRail`（竖向磁贴）、布局代数（与 `lib/layout.js` 保持同步）、持久化。
+- `lib/client.js` — 浏览器 bundle：`TabsContainer`（并列布局渲染 + 拖放 + 分隔条）、`DockRail`（竖向磁贴）、`mountThirdPartyMirror`（第三方兼容镜像）、布局代数（与 `lib/layout.js` 保持同步）、持久化。
 - `lib/layout.js` — 纯布局代数（`leaf/split/dropOn/closePanel/setRatioAt/addPanels`），无 React/DOM 依赖，单元测试覆盖。
 - `test/layout.test.mjs` — 布局代数断言（`node test/layout.test.mjs`）。
+- `test/mirror.test.mjs` — 第三方镜像行为测试（模拟 slots 核心，`node test/mirror.test.mjs`）。
 - `lib/index.js` — 宿主空 apply（仅使 bundle 行存在）。
 - `cordis.patch.yml` — bundle patch（插入 `id: details-tabs`）。
 - `package.json` — bundle manifest（`dsh.bundle.patch` + `dsh.client`）。
