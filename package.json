@@ -1,6 +1,6 @@
 {
   "name": "dsh-details-tabs",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Multi-panel right details column for DeepSeek Harness: a container that owns the single `details` slot and renders registered panels in a Blender-style split layout (side-by-side row/col splits, draggable dividers, drop zones to split/replace/close). Any plugin registering into `details` the native way is auto-mirrored as a panel — zero changes needed on their side.",
   "type": "module",
   "main": "lib/index.js",
