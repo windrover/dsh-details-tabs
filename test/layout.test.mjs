@@ -107,9 +107,9 @@ assert.equal(splitCount(leaf('a')), 0)
 // ── addPanels ───────────────────────────────────────────────────────────────
 {
   const l1 = addPanels(null, ['a', 'b'])
-  assert.deepEqual(l1, split('row', leaf('a'), leaf('b')))
+  assert.deepEqual(l1, split('col', leaf('a'), leaf('b')), 'default stacks vertically (col)')
   const l2 = addPanels(l1, ['a', 'b', 'c'])
-  assert.deepEqual(l2, split('row', split('row', leaf('a'), leaf('b')), leaf('c')))
+  assert.deepEqual(l2, split('col', split('col', leaf('a'), leaf('b')), leaf('c')))
   assert.equal(addPanels(l2, ['a']), l2, 'no missing → same ref')
   assert.equal(addPanels(l2, ['a', 'b', 'c']), l2)
   assert.equal(addPanels(null, []), null)
